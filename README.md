@@ -1,15 +1,17 @@
 # Cold Outbound Skills
 
-Open-source [Claude Code skills](https://docs.anthropic.com/en/docs/claude-code/skills) for cold email infrastructure and copywriting. Built by [GrowthEngineX](https://growthengine-x.com) from patterns across 1,000+ real B2B campaigns.
+Open-source [Claude Code skills](https://docs.anthropic.com/en/docs/claude-code/skills) for cold email infrastructure, lead sourcing, and copywriting. Built by [GrowthEngineX](https://growthengine-x.com) from patterns across 1,000+ real B2B campaigns.
 
 Each skill is a standalone `SKILL.md` file that gives Claude deep expertise in a specific cold outbound workflow. No API keys included — bring your own.
 
 ## Skills
 
-| Skill | What It Does |
-|-------|-------------|
-| [Cold Email Copy Grader](skills/cold-email-copy-grader/) | Grades your cold email campaigns 0-100. Scores copywriting, targeting, and personalization. Catches the AI personalization trap (71% poor rate). Rewrites bad copy. |
-| [Domain Setup: Dynadot + Zapmail](skills/domain-setup-dynadot-zapmail/) | End-to-end domain setup — generate short names, check availability, purchase on Dynadot, switch nameservers, connect on Zapmail, create inboxes, export to your sending platform. |
+| Skill | What It Does | API Keys Needed |
+|-------|-------------|-----------------|
+| [Cold Email Copy Grader](skills/cold-email-copy-grader/) | Grades your cold email campaigns 0-100. Scores copywriting, targeting, and personalization. Catches the AI personalization trap (71% poor rate). Rewrites bad copy. | None |
+| [Domain Setup: Dynadot + Zapmail](skills/domain-setup-dynadot-zapmail/) | End-to-end domain setup — generate short names, check availability, purchase on Dynadot, switch nameservers, connect on Zapmail, create inboxes, export to your sending platform. | Dynadot, Zapmail |
+| [Google Maps Scraper](skills/google-maps-scraper/) | Scrape Google Maps for business listings by query + location. Returns name, address, phone, website, rating, reviews, coordinates. Includes 42K US zip code database for state/city-wide scrapes. | RapidAPI |
+| [Prospeo Full Export](skills/prospeo-full-export/) | Export your entire Prospeo people search to CSV — even searches over 25K results. Handles pagination, rate limiting, deduplication, and automatic state-by-state splitting. | Prospeo |
 
 ## Installation
 
@@ -23,8 +25,6 @@ git clone https://github.com/growthenginenowoslawski/coldoutboundskills.git
 
 # Copy the skill you want
 cp -r coldoutboundskills/skills/cold-email-copy-grader ~/.claude/skills/
-# or
-cp -r coldoutboundskills/skills/domain-setup-dynadot-zapmail ~/.claude/skills/
 ```
 
 Claude Code will automatically detect skills in `~/.claude/skills/`.
@@ -38,7 +38,7 @@ cp -r coldoutboundskills/skills/* ~/.claude/skills/
 
 ### Option 3: Use as a System Prompt
 
-You can also copy the contents of any `SKILL.md` file directly into a system prompt for any LLM. The scoring methodology, API references, and workflows work independently of Claude Code.
+You can also copy the contents of any `SKILL.md` file directly into a system prompt for any LLM. The scoring methodology, API references, and workflows work independently of Claude Code. Copy the contents of `SKILL.md` into your system prompt and paste your campaign copy.
 
 ## Skill Details
 
@@ -81,6 +81,38 @@ Automates the entire cold email domain lifecycle:
 
 **Covers all the gotchas** we learned from setting up 500+ domains: DNS propagation timing, batch failure retries, comma encoding bugs, provisioning wait times, and more.
 
+---
+
+### Google Maps Scraper
+
+A self-contained tool for scraping business listings from Google Maps. Give it a search query (e.g., "pizza restaurant") and a location (zip code, city, or state), and it returns structured data for every matching business.
+
+**Features:**
+- CLI tool and optional web app with CSV export
+- Bundled database of 42,734 US zip codes with population data
+- Search entire states or filter by minimum population
+- Rate limiting, retries, and automatic deduplication
+- Deployable to Railway, Render, Fly.io, or any Node.js host
+
+**Requires:** A [RapidAPI](https://rapidapi.com) key with a subscription to the [Maps Data API](https://rapidapi.com/alexanderxbx/api/maps-data).
+
+---
+
+### Prospeo Full Export
+
+Extract your entire Prospeo people search to a CSV file. Build your search in Prospeo's web UI, describe the filters to Claude, and it pulls every single result via the API.
+
+**Features:**
+- Automatic pagination through all results
+- State-by-state splitting for US searches over 25K results (bypasses the 25K API cap)
+- Deduplication by LinkedIn URL across states
+- Credit cost estimation before running
+- Rate limiting and exponential backoff
+
+**Requires:** A [Prospeo](https://prospeo.io) API key with credits for the Search Person API.
+
+---
+
 ## What Are Claude Code Skills?
 
 [Skills](https://docs.anthropic.com/en/docs/claude-code/skills) are markdown files that give Claude specialized knowledge and workflows. When you place a `SKILL.md` file in `~/.claude/skills/`, Claude Code automatically loads it and can use that expertise in conversations.
@@ -93,6 +125,7 @@ Want to add a skill? Create a folder in `skills/` with a `SKILL.md` file followi
 
 ```yaml
 ---
+name: skill-name
 description: What the skill does and when to use it.
 ---
 
