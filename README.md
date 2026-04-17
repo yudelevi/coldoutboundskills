@@ -1,145 +1,176 @@
 # Cold Outbound Skills
 
-Open-source [Claude Code skills](https://docs.anthropic.com/en/docs/claude-code/skills) for cold email infrastructure, lead sourcing, and copywriting. Built by [GrowthEngineX](https://growthengine-x.com) from patterns across 1,000+ real B2B campaigns.
+Open-source [Claude Code skills](https://docs.anthropic.com/en/docs/claude-code/skills) for cold email infrastructure, lead sourcing, copywriting, and operations. Built by [GrowthEngineX](https://growthengine-x.com) from patterns across 1,000+ real B2B campaigns.
 
-Each skill is a standalone `SKILL.md` file that gives Claude deep expertise in a specific cold outbound workflow. No API keys included — bring your own.
+28 skills that work together. Clone the repo, bring your API keys, point Claude Code at it, go from zero to a running campaign.
 
-## Skills
+**New here?** Invoke `/cold-email-kickoff` — it's the guided entry point that orchestrates ICP + lead magnet + strategy + plan in one flow.
 
-| Skill | What It Does | API Keys Needed |
-|-------|-------------|-----------------|
-| [Cold Email Copy Grader](skills/cold-email-copy-grader/) | Grades your cold email campaigns 0-100. Scores copywriting, targeting, and personalization. Catches the AI personalization trap (71% poor rate). Rewrites bad copy. | None |
-| [Domain Setup: Dynadot + Zapmail](skills/domain-setup-dynadot-zapmail/) | End-to-end domain setup — generate short names, check availability, purchase on Dynadot, switch nameservers, connect on Zapmail, create inboxes, export to your sending platform. | Dynadot, Zapmail |
-| [Google Maps Scraper](skills/google-maps-scraper/) | Scrape Google Maps for business listings by query + location. Returns name, address, phone, website, rating, reviews, coordinates. Includes 42K US zip code database for state/city-wide scrapes. | RapidAPI |
-| [Prospeo Full Export](skills/prospeo-full-export/) | Export your entire Prospeo people search to CSV — even searches over 25K results. Handles pagination, rate limiting, deduplication, and automatic state-by-state splitting. | Prospeo |
+## What's in here
 
-## Installation
+29 skills organized in 5 tracks.
 
-### Option 1: Install a Single Skill
+**New to cold email? Start with `/cold-email-kickoff`.** It orchestrates ICP → lead magnet → campaign strategy → plan in one guided flow.
 
-Copy the skill folder into your Claude Code skills directory:
+### Track 1 — Strategy (before you send anything)
+- **`cold-email-kickoff`** — single "start here" orchestrator (recommended entry point)
+- **`icp-onboarding`** — conversational intake that produces a `client-profile.yaml` (scrapes website first)
+- **`lead-magnet-brainstorm`** — figure out what to offer for free in your cold emails
+- **`campaign-strategy`** — generates 15-25 campaign ideas with AI strategies + value props
+- **`campaign-copywriting`** — stepwise copy writer (direction → subject → body → final YAML)
+
+### Track 2 — Infrastructure
+- **`zapmail-domain-setup-public`** — buy `.com`/`.co` domains on Dynadot, provision inboxes on Zapmail
+- **`smartlead-inbox-manager`** — warmup settings, signatures (name/title/company/address), active/insurance tagging
+- **`email-deliverability-audit`** — diagnostic tool (SPF/DKIM/DMARC, spam placement, 1% rule)
+- **`deliverability-incident-response`** — triage playbook for spam, bounces, blacklists, warmup blocks
+
+### Track 3 — List Building
+- **`prospeo-full-export`** — title-first lead search (paginated, 25K+)
+- **`prospeo-search-api`** — Prospeo filter reference
+- **`blitz-list-builder`** — domain-first contact discovery
+- **`google-maps-list-builder`** — scrape Google Maps for local SMB lists
+- **`disco-like`** — lookalike company discovery (seed domains or NL ICP text)
+- **`competitor-engagers`** — find people engaging with competitor LinkedIn posts
+- **`icp-prompt-builder`** — required qualification step invoked by every list-building skill
+- **`list-quality-scorecard`** — grade a lead CSV across 8 dimensions before uploading
+
+### Track 4 — Copy & Send
+- **`cold-email-starter-kit`** — the 14-step end-to-end tutorial (alternative to `/cold-email-kickoff`)
+- **`spam-word-checker`** — scan copy for deliverability-killing phrases
+- **`smartlead-spintax`** — add spintax variations to emails
+- **`smartlead-api`** — Smartlead API reference
+- **`smartlead-campaign-upload-public`** — DRAFT-upload leads.csv + variants.yaml to Smartlead (always DRAFT, you hit Start manually)
+
+### Track 5 — Iterate & Automate
+- **`positive-reply-scoring`** — the metric that matters (positive replies / total sent)
+- **`experiment-design`** — single-variable experiment framework
+- **`auto-research-public`** — autonomous campaign launcher (scrape → ICP → leads → personalize → upload)
+- **`personalization-subagent-pattern`** — reusable pattern for per-lead Claude sub-agent personalization
+- **`deliverability-test-public`** — compare reply/bounce by inbox type
+- **`cold-email-weekly-rhythm`** — Monday/Wednesday/Friday operational playbook — what separates hobbyist from top-1%
+
+## Getting started
+
+### 1. Install Claude Code
+
+This repo is designed for Claude Code. Install from https://claude.com/claude-code.
+
+### 2. Clone and configure
 
 ```bash
-# Clone the repo
-git clone https://github.com/growthenginenowoslawski/coldoutboundskills.git
-
-# Copy the skill you want
-cp -r coldoutboundskills/skills/cold-email-copy-grader ~/.claude/skills/
+git clone <this-repo-url> ~/cold-email-ai-skills
+cd ~/cold-email-ai-skills
+cp .env.example .env
+# Edit .env with your API keys (you don't need all of them — only the skills you'll use)
 ```
 
-Claude Code will automatically detect skills in `~/.claude/skills/`.
-
-### Option 2: Install All Skills
+### 3. Install dependencies
 
 ```bash
-git clone https://github.com/growthenginenowoslawski/coldoutboundskills.git
-cp -r coldoutboundskills/skills/* ~/.claude/skills/
+npm install -g tsx
+cd skills/cold-email-starter-kit
+npm install
 ```
 
-### Option 3: Use as a System Prompt
+### 4. Verify credentials
 
-You can also copy the contents of any `SKILL.md` file directly into a system prompt for any LLM. The scoring methodology, API references, and workflows work independently of Claude Code. Copy the contents of `SKILL.md` into your system prompt and paste your campaign copy.
+```bash
+npx tsx skills/cold-email-starter-kit/scripts/verify-credentials.ts
+```
 
-## Skill Details
+### 5. Start with the kickoff orchestrator
 
-### Cold Email Copy Grader
+If you've never run cold email before, invoke the kickoff skill from Claude Code:
 
-Paste your draft email sequences and targeting details. Get back a score, risk flags, benchmark comparisons, and full copywriting rewrites when your copy needs work.
+```
+/cold-email-kickoff
+```
 
-**What you get:**
-- Score (0-100) broken down by copywriting quality (40%), targeting (35%), and personalization (25%)
-- Risk flags that catch the 15 most common anti-patterns
-- Benchmark comparison against top-performing campaigns
-- Full rewrites when your score is below 65
-- Quick grade mode for a fast gut check
+It asks whether you have infrastructure already, then orchestrates ICP + lead magnet + campaign strategy + plan in a single guided flow. Produces a `campaign-plan.md` and hands you off to the right next skill based on your current state.
 
-**The most important finding:** Generic AI personalization — where AI describes what the prospect's company does — has a 71% poor rate and performs 4x worse than no personalization at all. The skill catches this automatically.
+Alternative: `/cold-email-starter-kit` — the longer manual 14-step tutorial. Use this if you want to learn each piece deeply rather than move fast.
 
-**No dependencies.** No API keys, no database, no external tools. Everything runs from patterns baked into the skill.
+## API keys required (bring your own)
 
-See [examples/before-and-after.md](skills/cold-email-copy-grader/examples/before-and-after.md) for a full worked example (score: 38 → 66).
+| Service | Env var | What it's for | Skills that use it |
+|---|---|---|---|
+| Smartlead | `SMARTLEAD_API_KEY` | Send emails, manage inboxes | inbox-manager, starter-kit, auto-research, audit, scoring |
+| Prospeo | `PROSPEO_API_KEY` | List building (title-first) | prospeo-*, auto-research |
+| Dynadot | `DYNADOT_API_KEY` | Buy domains | zapmail-setup |
+| Zapmail | `ZAPMAIL_API_KEY` | Create inboxes | zapmail-setup |
+| MillionVerifier | `MILLIONVERIFIER_API_KEY` | Validate emails before sending | waterfall, auto-research |
+| Blitz | `BLITZ_API_KEY` | Domain-to-contacts lookup | blitz-list-builder |
+| RapidAPI | `RAPIDAPI_KEY` | Google Maps scraping, LinkedIn data | google-maps-*, competitor-engagers |
+| Instantly | `INSTANTLY_API_KEY` | Alternative sending platform | starter-kit (09) |
+| OpenWebNinja | `OPENWEBNINJA_KEY` | Company news enrichment | starter-kit (07) |
+| OpenRouter | `OPENROUTER_API_KEY` | AI company analysis enrichment | starter-kit (07), competitor-engagers |
 
----
+The minimum viable setup for your first campaign is: **Dynadot + Zapmail + Prospeo + Smartlead**. Start there, add more as you need them.
 
-### Domain Setup: Dynadot + Zapmail
+## Recommended path
 
-Automates the entire cold email domain lifecycle:
+**If you've never run cold email:**
+1. `/cold-email-kickoff` — one guided flow: ICP → lead magnet → strategy → plan → next-skill menu
+2. Follow the menu's recommended next skill (infra setup OR list building, depending on your current state)
+3. After campaign launch, wait 21 days, then `/positive-reply-scoring`
+4. Add `/cold-email-weekly-rhythm` to your calendar for ongoing ops
 
-1. **Generate** short domain name candidates using prefix/suffix patterns
-2. **Check availability** via Dynadot API (batch 100 at a time)
-3. **Purchase** available domains on Dynadot
-4. **Switch nameservers** to Zapmail's DNS
-5. **Connect** domains on Zapmail
-6. **Create inboxes** (2 per domain)
-7. **Export** to your email sending platform (Smartlead, Instantly, and 14 others)
+**If you have experience but no automation:**
+1. `/icp-onboarding` — lock down your ICP
+2. `/smartlead-inbox-manager` — configure your existing inboxes properly
+3. `/email-deliverability-audit` — fix any domain/inbox issues before scaling
+4. `/auto-research-public` — daily automated campaign launches
 
-**Includes onboarding** for first-time users — walks you through getting API keys, storing them safely, and verifying access.
+**If you're debugging a broken campaign:**
+1. `/email-deliverability-audit` — find the infrastructure issue
+2. `/positive-reply-scoring` — see if replies are positive or hostile
+3. `/deliverability-test-public` — compare across inbox types
+4. `/spam-word-checker` — scan copy for banned phrases
 
-**Requires your own API keys:**
-- Dynadot API key (for domain registration)
-- Zapmail API key (for inbox provisioning)
+## Directory layout
 
-**Covers all the gotchas** we learned from setting up 500+ domains: DNS propagation timing, batch failure retries, comma encoding bugs, provisioning wait times, and more.
+```
+cold-email-ai-skills/
+  README.md                    # this file
+  .env.example                 # template for your API keys
+  skills/
+    <skill-name>/
+      SKILL.md                 # the skill definition (required)
+      scripts/                 # runnable code
+      references/              # deeper docs
+  profiles/                    # YOUR client profiles + experiment logs (gitignored)
+    <business-slug>/
+      client-profile.yaml
+      experiments/
+      scores/
+```
 
----
+## Cost expectations
 
-### Google Maps Scraper
+First campaign (2,000 leads, 20 domains, 40 inboxes):
+- Domains: ~$240 one-time (20 × ~$12 .com). Fall back to .co (~$8-30) if .com is taken.
+- Zapmail: ~$60/mo for 40 inboxes
+- Prospeo: ~$20 for 2,000-lead export
+- Smartlead: ~$39/mo starter plan
+- MillionVerifier: ~$5 for 2,000 validations
+- **Month 1 total: ~$360. Recurring: ~$130/mo.**
 
-A self-contained tool for scraping business listings from Google Maps. Give it a search query (e.g., "pizza restaurant") and a location (zip code, city, or state), and it returns structured data for every matching business.
+See `skills/cold-email-starter-kit/references/00-getting-started.md` for full breakdown.
 
-**Features:**
-- CLI tool and optional web app with CSV export
-- Bundled database of 42,734 US zip codes with population data
-- Search entire states or filter by minimum population
-- Rate limiting, retries, and automatic deduplication
-- Deployable to Railway, Render, Fly.io, or any Node.js host
+## A note on ethics
 
-**Requires:** A [RapidAPI](https://rapidapi.com) key with a subscription to the [Maps Data API](https://rapidapi.com/alexanderxbx/api/maps-data).
+Cold email is legal when done right, but it's a privilege. Don't spam. Don't email consumers. Honor unsubscribes instantly. Include a real physical address. Be the kind of sender you'd want to receive email from.
 
----
-
-### Prospeo Full Export
-
-Extract your entire Prospeo people search to a CSV file. Build your search in Prospeo's web UI, describe the filters to Claude, and it pulls every single result via the API.
-
-**Features:**
-- Automatic pagination through all results
-- State-by-state splitting for US searches over 25K results (bypasses the 25K API cap)
-- Deduplication by LinkedIn URL across states
-- Credit cost estimation before running
-- Rate limiting and exponential backoff
-
-**Requires:** A [Prospeo](https://prospeo.io) API key with credits for the Search Person API.
-
----
-
-## What Are Claude Code Skills?
-
-[Skills](https://docs.anthropic.com/en/docs/claude-code/skills) are markdown files that give Claude specialized knowledge and workflows. When you place a `SKILL.md` file in `~/.claude/skills/`, Claude Code automatically loads it and can use that expertise in conversations.
-
-Think of skills as reusable playbooks — they encode domain knowledge, API references, scoring rubrics, and step-by-step workflows that Claude can execute on demand.
+The best cold emails are the ones the recipient is glad they got.
 
 ## Contributing
 
-Want to add a skill? Create a folder in `skills/` with a `SKILL.md` file following this format:
-
-```yaml
----
-name: skill-name
-description: What the skill does and when to use it.
----
-
-# Skill Name
-
-[Instructions, API references, workflows, etc.]
-```
-
-Open a PR and we'll review it.
+This repo is a collection of patterns refined over thousands of real campaigns. Improvements welcome — PRs should include:
+- Real-world test results (not theoretical changes)
+- Generalizable insight (not hyper-specific to one industry)
+- Keep beginner-friendliness as the north star
 
 ## License
 
-MIT License. See [LICENSE](LICENSE).
-
-## Credits
-
-Built by [GrowthEngineX](https://coldoutbound.com). Data from real campaigns run across dozens of industries.
+MIT — use it, fork it, profit from it. Attribution appreciated but not required.
