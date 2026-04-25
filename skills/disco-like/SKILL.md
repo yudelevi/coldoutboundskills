@@ -1,6 +1,6 @@
 ---
 name: disco-like
-description: Find lookalike companies via DiscoLike's 65M+ business domain database. Search by seed domains ("find companies like clay.com and apollo.io") or natural-language ICP text ("B2B cold email outreach"). Supports negation domains (exclude competitors/existing customers) and country filtering. Use when you already know 3-10 reference companies and want hundreds more that look like them. Outputs CSV ready for /blitz-list-builder or the email waterfall.
+description: Find lookalike companies via DiscoLike's 65M+ business domain database. Search by seed domains ("find companies like clay.com and apollo.io") or natural-language ICP text ("B2B cold email outreach"). Supports negation domains and country/region filtering. Use when you already know 3-10 reference companies and want hundreds more that look like them. Outputs CSV ready for /blitz-list-builder or the email waterfall.
 ---
 
 # Disco-Like
@@ -18,7 +18,7 @@ Lookalike company discovery. Give it 3-10 seed domains you know are a good fit; 
 
 - You need PEOPLE, not companies (use Prospeo or Blitz after this)
 - Your ICP is extremely narrow or nascent (<5 seed examples exist)
-- Budget is tight — DiscoLike charges per call + per record; see cost section
+- Budget is tight — DiscoLike charges credits per net-new domain (90-day dedupe); check the dashboard for current rate
 
 ## Two search modes
 
@@ -36,7 +36,7 @@ DiscoLike finds companies with similar characteristics (industry mix, employee c
 npx tsx scripts/discover.ts --text "B2B SaaS companies selling outbound sales software to RevOps teams" --country US --out lookalikes.csv
 ```
 
-Uses DiscoLike's text matching. Less precise than seeds, but useful when you don't have named comparables.
+`--text` routes to DiscoLike's `icp_prompt` wizard, which extracts filters (country, employee range, category, tech stack), generates clean ICP text, and synthesizes its own seed domain set, then runs discovery — all in one call. With a sharp ICP description this is typically **more precise than 2-3 hand-picked seeds**, because the wizard pulls a wider, better-balanced seed set from the index plus structured filters you'd otherwise have to hand-build. The script logs the `X-Applied-Filters` response header so you can see what got extracted and iterate.
 
 ### Hybrid mode
 
@@ -44,7 +44,7 @@ Uses DiscoLike's text matching. Less precise than seeds, but useful when you don
 npx tsx scripts/discover.ts --domains "clay.com" --text "outbound automation" --country US --out lookalikes.csv
 ```
 
-Combines both — starts from seeds, expands via text semantics.
+Combines both — starts from seeds, expands via the ICP wizard.
 
 ## Negation (exclude existing customers / competitors)
 
@@ -60,24 +60,20 @@ Always include your own domain + existing customers + known-unfit competitors. S
 
 ## Inputs
 
-- `DISCOLIKE_API_KEY` (env) — from DiscoLike dashboard
+- `DISCOLIKE_API_KEY` (env) — from DiscoLike dashboard (https://app.discolike.com/account/management/keys)
 - Either `--domains` or `--text` (at least one required)
 - Optional: `--negation-domains`, `--country`, `--limit`, `--max-companies`
+- `--country` accepts ISO-3166-1 alpha-2 codes (US, GB, DE, ...) AND region aliases (`EU`, `EMEA`, `APAC`, `DACH`, `NORDICS`, `LATAM`, `MENA`, `BENELUX`, `CEE`, `ANZ`, `ASEAN`, `GCC`) which auto-expand server-side.
 
 ## Outputs
 
-CSV with columns: `domain, company_name, industry, headcount_range, headcount, location_country, location_state, location_city, linkedin_url, description, source`
+CSV with columns: `domain, company_name, industry, headcount_range, headcount, location_country, location_state, location_city, linkedin_url, similarity, score, description, source`
 
 All rows have `source=discolike` so you can mix with other list-builder outputs without collisions.
 
 ## Cost
 
-- **$0.10 per API call** + **$2.00 per 1,000 records returned**
-- Default page size: 100 per call
-- A 500-company discovery = ~5 calls + 500 records ≈ $1.50
-- A 10,000-company discovery ≈ $10 + $20 = **$30**
-
-Compare to Prospeo, which charges per export. DiscoLike is typically cheaper per company-discovered but more expensive per enriched contact (DiscoLike gives companies, not people).
+DiscoLike bills credits **only for net-new domains** — anything your account discovered in the last 90 days re-pulls for free. That makes iteration cheap: re-running the same `--text` or seed list with tweaked filters mostly hits the dedupe cache. The per-credit rate and your monthly allotment depend on plan; see https://app.discolike.com for current pricing. To forecast a fresh pull, run a small `--limit 20` sample and read the `X-Total-Count` header (the script logs it).
 
 ## Required step: Qualify with /icp-prompt-builder
 
@@ -88,14 +84,18 @@ Before pulling 5,000 companies, run DiscoLike on a small sample (50-100), then i
 2. Refine your ICP description / negation list based on what DiscoLike returned
 3. Only then scale to 5,000+
 
-**Why required:** DiscoLike lookalike results are only as good as your seed domains. If 80% of the first 50 are wrong, you need to change seeds, not pay to pull more. At $0.10/call + $2/1K records, a wrong-seeded 10K pull costs $20-$30 in DiscoLike fees AND cascades into wasted email-finder fees downstream. Qualifying the first 50 catches bad seeds before they become expensive.
+(DiscoLike also has a built-in `/v1/validate/icp` endpoint that does this server-side with structured fit / confidence / reasoning per domain — handy if you want to skip eyeballing.)
+
+**Why required:** DiscoLike lookalike results are only as good as your seed domains. If 80% of the first 50 are wrong, you need to change seeds, not pay to pull more. A wrong-seeded 10K pull burns credits AND cascades into wasted email-finder fees downstream. Qualifying the first 50 catches bad seeds before they become expensive.
+
+**Cheap to iterate.** Because of the 90-day net-new dedupe, re-running the same query with tweaked `--text`, filters, or negations mostly re-hits domains you already paid for — so refining your inputs after the sample costs roughly nothing in credits.
 
 ## Recommended flow
 
 1. `/icp-onboarding` → nail down seed companies (your best 5 customers)
 2. `/disco-like --domains="seed1,seed2,..." --limit=100 --out=sample.csv` → sample run
 3. `/icp-prompt-builder` → score the sample, tune ICP prompt
-4. If sample quality is high, scale: `/disco-like ... --limit=5000 --out=full.csv`
+4. If sample quality is high, scale: `/disco-like ... --max-companies=5000 --out=full.csv`
 5. `/blitz-list-builder --domains-file=full.csv` → find decision-makers at each
 6. `/email-waterfall` → fill in emails
 7. Upload to Smartlead
@@ -110,12 +110,12 @@ Before pulling 5,000 companies, run DiscoLike on a small sample (50-100), then i
 
 | Method | Path | Purpose |
 |---|---|---|
-| GET | `/count?domains=X&text=Y` | Total matching companies (before paying to pull) |
-| GET | `/discover?domains=X&text=Y&country=Z&limit=100&offset=0` | Paginated lookalike results |
+| GET | `/discover` | Lookalike + filtered discovery (paginated via `max_records` + `offset`) |
+| GET | `/count` | Pre-count for **structured filters only** (no `domain`, no `icp_text`) |
 | GET | `/bizdata?domain=X` | Detailed data for a single domain |
 
 **Data returned per company:**
-- `domain`, `name`, `description`
+- `domain`, `name`, `description`, `similarity` (0-100), `score` (digital footprint 0-800)
 - `industry_groups` (weighted dict — script takes top industry)
 - `employees` (range string like "51-200")
 - `address` (country, state, city)
@@ -126,15 +126,16 @@ Before pulling 5,000 companies, run DiscoLike on a small sample (50-100), then i
 ## Common gotchas
 
 - **Seed domains must be clean bare domains.** `clay.com` works, `https://clay.com/` doesn't.
-- **Text mode is fuzzier than you think.** "Outbound sales" returns SaaS, agencies, consultancies — broad. Tighten with seeds.
+- **`--text` runs the ICP wizard, not raw semantic match.** The wizard auto-extracts filters and seed domains from your description. If you specifically want raw semantic matching, use `--icp-text` instead (maps to the lower-level `icp_text` parameter).
 - **No people data.** DiscoLike is company-level. Always chain with Blitz or Prospeo for contacts.
-- **Non-US coverage varies.** US has deepest data. EU/APAC coverage is thinner; count may be misleading.
-- **Check the count FIRST.** Before paying for 10,000 records, run `/count` to confirm the universe actually has 10,000. Many narrow ICPs top out at 500-2000.
+- **Regional coverage is good.** EU / EMEA / APAC / DACH / NORDICS / LATAM are first-class region codes that auto-expand. Don't manually OR member countries; pass the region.
+- **`/count` cannot pre-count a vector query.** It only accepts structured filters (country, category, employee_range, tech_stack, phrase_match, etc.) — passing `domain` or `icp_text` returns 422. To gauge a lookalike's universe, run `/discover` with `--limit 20` and read `X-Total-Count` instead.
+- **Default results can be 50 near-clones of one archetype.** If your ICP is broad and your top result dominates the vector space, the default `variance=UNRESTRICTED` will return many similar companies. Pass `--variance MEDIUM` (or `MID_HIGH`) to spread results across the ICP — useful for TAM building where you want range, not 100 versions of the same company.
 
 ## Scripts
 
 - `scripts/discover.ts` — main search + CSV output
-- `scripts/count.ts` — pre-check universe size before paying
+- `scripts/count.ts` — structured-filter precount (no `domain` / `icp_text`)
 - `scripts/bizdata.ts` — single-domain lookup
 
 ## What to do next
