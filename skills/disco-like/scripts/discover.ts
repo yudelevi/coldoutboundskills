@@ -106,13 +106,12 @@ async function fetchWithRetry(url: string): Promise<Response> {
   throw new Error("exhausted retries");
 }
 
-function buildParams(args: ReturnType<typeof parseArgs>, offset: number): URLSearchParams {
+function buildParams(args: ReturnType<typeof parseArgs>, text: string, offset: number): URLSearchParams {
   const p = new URLSearchParams();
 
   // --text → icp_prompt (the wizard: auto-extracts country/employee_range/
   // category/tech_stack and synthesizes seed domains from natural language).
-  // main() validates args.text is set before reaching here.
-  p.set("icp_prompt", args.text!);
+  p.set("icp_prompt", text);
   if (args.domains) p.set("domain", args.domains);
   if (args.negationDomains) p.set("negate_domain", args.negationDomains);
 
@@ -165,9 +164,10 @@ function parseEmployeeMidpoint(e: string | undefined): number | "" {
 
 async function main() {
   const args = parseArgs();
-  if (!args.text) {
+  const { text } = args;
+  if (!text) {
     console.error(
-      "Missing --text (natural-language ICP prompt, required; routes to icp_prompt). Examples:\n" +
+      "Missing --text / --icp-prompt (natural-language ICP prompt, required; routes to icp_prompt). Examples:\n" +
         '  --text "ecom companies specializing in lighting fixtures in US"\n' +
         '  --text "medical device manufacturing startups in EU"\n' +
         '  --text "EdTech SaaS companies"\n' +
@@ -186,7 +186,7 @@ async function main() {
   let firstTotalCount: string | null = null;
 
   while (rows.length < args.maxCompanies && offset < MAX_RECORDS_PER_CALL) {
-    const url = `${DISCOLIKE_BASE}/discover?${buildParams(args, offset).toString()}`;
+    const url = `${DISCOLIKE_BASE}/discover?${buildParams(args, text, offset).toString()}`;
     const resp = await fetchWithRetry(url);
     apiCalls++;
 

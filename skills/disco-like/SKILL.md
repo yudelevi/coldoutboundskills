@@ -17,6 +17,7 @@ Lookalike company discovery via natural-language ICP prompt. Describe your ICP i
 ## When NOT to use
 
 - You need PEOPLE, not companies (use Prospeo or Blitz after this)
+- Your ICP is genuinely one-of-one (you sell to a single named account or two) — there's nothing to look-alike against
 - Budget is tight — DiscoLike charges credits per net-new domain (90-day dedupe); check the dashboard for current rate
 
 ## Usage
@@ -32,7 +33,7 @@ npx tsx scripts/discover.ts --text "EdTech SaaS companies" --country US --out lo
 If you have 2-3 reference domains, fold them into the prompt — the wizard uses them to bias the seed set:
 
 ```bash
-npx tsx scripts/discover.ts --text "Industrial automation and control products distributors like: heilind.com, bpx.co.uk, automation24.de, factorycontrols.com.au" --out lookalikes.csv
+npx tsx scripts/discover.ts --text "Industrial automation distributors like heilind.com, bpx.co.uk, automation24.de" --out lookalikes.csv
 ```
 
 You can also pass reference domains via `--domains` alongside `--text` — same effect:
