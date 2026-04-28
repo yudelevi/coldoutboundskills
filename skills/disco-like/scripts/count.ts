@@ -2,7 +2,7 @@
 /**
  * DiscoLike /count — pre-count for STRUCTURED FILTERS ONLY.
  *
- * Important: /count does NOT accept `domain` or `icp_text` (the API will return 422).
+ * Important: /count does NOT accept vector inputs (`domain` / `icp_prompt`) — the API will return 422.
  * Use it to size the universe of structured filters (country / category / employee_range / tech_stack / phrase_match / etc.)
  * before adding a vector query.
  *
@@ -75,7 +75,7 @@ async function main() {
   if (![...p.keys()].length) {
     console.error(
       "Pass at least one structured filter, e.g. --country US --category TECHNOLOGY --employee-range '51,500'.\n" +
-        "Note: /count does NOT accept domain or icp_text — use scripts/discover.ts with --limit 20 to sample-count vector queries.",
+        "Note: /count does NOT accept vector inputs (domain / icp_prompt) — use scripts/discover.ts with --limit 20 to sample-count vector queries.",
     );
     process.exit(1);
   }

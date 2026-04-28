@@ -1,17 +1,19 @@
 #!/usr/bin/env tsx
 /**
- * DiscoLike lookalike + filtered discovery → CSV.
+ * DiscoLike lookalike discovery via natural-language ICP prompt → CSV.
  *
  * Usage:
  *   export DISCOLIKE_API_KEY=xxx
- *   npx tsx scripts/discover.ts --domains "clay.com,apollo.io,outreach.io" --country US --limit 500 --out lookalikes.csv
- *   npx tsx scripts/discover.ts --text "B2B SaaS for RevOps in 50-200 employee US cos" --out lookalikes.csv
- *   npx tsx scripts/discover.ts --text "outbound sales automation" --domains "clay.com" --out lookalikes.csv
- *   npx tsx scripts/discover.ts --domains "clay.com" --negation-domains "yourco.com,bigcustomer.com" --max-companies 1000 --out ...
+ *   npx tsx scripts/discover.ts --text "ecom companies specializing in lighting fixtures in US" --out lookalikes.csv
+ *   npx tsx scripts/discover.ts --text "medical device manufacturing startups in EU" --country EU --out lookalikes.csv
+ *   npx tsx scripts/discover.ts --text "Industrial automation distributors like heilind.com, bpx.co.uk, automation24.de" --out lookalikes.csv
+ *   npx tsx scripts/discover.ts --text "outbound sales automation" --domains "clay.com,apollo.io" --out lookalikes.csv
  *
- * Flags use space OR =. CLI ergonomics match the original; flags are mapped to the API names internally.
- * --text routes to the icp_prompt wizard (auto-extracts filters + seed domains).
- * --icp-text is the raw semantic-match escape hatch (skips the wizard).
+ * Flags use space OR =. CLI ergonomics map to API param names internally.
+ * --text (alias --icp-prompt) is required; routes to the icp_prompt wizard
+ * (auto-extracts country/employee_range/category/tech_stack and synthesizes a
+ * seed-domain set from your prompt). --domains is optional augmentation —
+ * pass reference domains to bias the seed set.
  * API reference: https://api.discolike.com/v1/docs/api/endpoints/discover/
  */
 
@@ -43,14 +45,13 @@ function parseArgs() {
   const maxCompanies = Number(get("--max-companies") ?? get("--max-records") ?? DEFAULT_MAX_COMPANIES);
 
   return {
-    // Vector inputs (DiscoverFilters-only).
-    // --text routes to icp_prompt (server-side ICP wizard: auto-extracts filters,
-    // seed domains, and ICP text from natural language). --icp-text is the lower-level
-    // raw semantic match if you specifically want to skip the wizard.
+    // Vector input — --text (alias --icp-prompt) is required and maps to the
+    // server-side icp_prompt wizard (auto-extracts country/employee_range/
+    // category/tech_stack and synthesizes a seed-domain set from natural
+    // language). --domains is optional augmentation.
+    text: get("--text") ?? get("--icp-prompt"),
     domains: get("--domains"),
     negationDomains: get("--negation-domains") ?? get("--negate-domain"),
-    text: get("--text"),
-    icpText: get("--icp-text"),
 
     // Location
     country: get("--country"),
@@ -108,13 +109,12 @@ async function fetchWithRetry(url: string): Promise<Response> {
 function buildParams(args: ReturnType<typeof parseArgs>, offset: number): URLSearchParams {
   const p = new URLSearchParams();
 
-  // Vector inputs — map original CLI flags to actual API param names
+  // --text → icp_prompt (the wizard: auto-extracts country/employee_range/
+  // category/tech_stack and synthesizes seed domains from natural language).
+  // main() validates args.text is set before reaching here.
+  p.set("icp_prompt", args.text!);
   if (args.domains) p.set("domain", args.domains);
   if (args.negationDomains) p.set("negate_domain", args.negationDomains);
-  // --text → icp_prompt (the wizard: auto-extracts country/employee_range/category/
-  // tech_stack, generates clean icp_text, and suggests seed domains in one call).
-  if (args.text) p.set("icp_prompt", args.text);
-  if (args.icpText) p.set("icp_text", args.icpText);
 
   // Location
   if (args.country) p.set("country", args.country);
@@ -165,11 +165,15 @@ function parseEmployeeMidpoint(e: string | undefined): number | "" {
 
 async function main() {
   const args = parseArgs();
-  if (!args.domains && !args.text && !args.icpText) {
+  if (!args.text) {
     console.error(
-      "Need at least one of: --domains a,b  OR  --text '...'  (recommended; routes to icp_prompt)\n" +
-        "Or use --icp-text '...' to skip the wizard and run raw semantic matching.\n" +
-        "Filter-only searches (no vector) also work — pass --country / --category / --tech-stack / etc.",
+      "Missing --text (natural-language ICP prompt, required; routes to icp_prompt). Examples:\n" +
+        '  --text "ecom companies specializing in lighting fixtures in US"\n' +
+        '  --text "medical device manufacturing startups in EU"\n' +
+        '  --text "EdTech SaaS companies"\n' +
+        "Add reference domains inside the prompt or via --domains to bias the seed set:\n" +
+        '  --text "Industrial automation distributors like heilind.com, bpx.co.uk, automation24.de"\n' +
+        '  --text "outbound sales automation" --domains "clay.com,apollo.io"',
     );
     process.exit(1);
   }
@@ -190,7 +194,7 @@ async function main() {
       firstTotalCount = resp.headers.get("x-total-count");
       firstAppliedFilters = resp.headers.get("x-applied-filters");
       if (firstTotalCount) console.error(`[DiscoLike] X-Total-Count (first page): ${firstTotalCount}`);
-      if (firstAppliedFilters && args.text) {
+      if (firstAppliedFilters) {
         console.error(`[DiscoLike] X-Applied-Filters (extracted from --text via icp_prompt wizard): ${firstAppliedFilters}`);
       }
     }
